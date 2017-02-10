@@ -23,7 +23,7 @@ func generateRandomPage(pageSize int) (string, string) {
 
 func runServer(c *cli.Context) error {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		hash, bstr := generateRandomPage(2e3)
+		hash, bstr := generateRandomPage(184643)
 
 		fmt.Fprintf(w, "hash: %s\n\n%s", hash, bstr)
 		//k := r.URL.Path[1:]
@@ -34,11 +34,20 @@ func runServer(c *cli.Context) error {
 }
 
 func sendRequests(c *cli.Context) error {
-	resp, err := http.Get("http://localhost:8080/list")
-	if err != nil {
-		return err
+	server := c.String("server")
+	log.Printf("Connecting to target server: %s", server)
+
+	_, urlRand := generateRandomPage(30)
+	url := fmt.Sprintf("http://%s/%s", server, urlRand)
+
+	for {
+		fmt.Printf("Fetching URL %s\n", url)
+		resp, err := http.Get(url)
+		if err != nil {
+			return err
+		}
+		fmt.Println(resp)
 	}
-	fmt.Println(resp)
 	return nil
 }
 
@@ -57,6 +66,12 @@ func main() {
 			Name:   "request",
 			Usage:  "Send requests to local server",
 			Action: sendRequests,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "server",
+					Usage: "The host:port string for the server to connect to",
+				},
+			},
 		},
 		{
 			Name:   "server",
