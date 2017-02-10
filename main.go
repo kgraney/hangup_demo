@@ -3,11 +3,13 @@ package main
 import (
 	"crypto/md5"
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/urfave/cli"
 )
@@ -44,9 +46,16 @@ func sendRequests(c *cli.Context) error {
 	errs := make(chan error)
 
 	getThread := func() {
+		tlsConfig := &tls.Config{}
+		transport := &http.Transport{TLSClientConfig: tlsConfig}
+		client := &http.Client{
+			Timeout:   20 * time.Second,
+			Transport: transport,
+		}
+
 		for url := range urls {
 			fmt.Printf("Fetching URL %s\n", url)
-			resp, err := http.Get(url)
+			resp, err := client.Get(url)
 			if err != nil {
 				errs <- err
 			}
