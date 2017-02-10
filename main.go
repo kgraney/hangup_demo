@@ -37,18 +37,33 @@ func sendRequests(c *cli.Context) error {
 	server := c.String("server")
 	log.Printf("Connecting to target server: %s", server)
 
+	urls := make(chan string)
+	errs := make(chan error)
+
+	getThread := func() {
+		for url := range urls {
+			fmt.Printf("Fetching URL %s\n", url)
+			resp, err := http.Get(url)
+			if err != nil {
+				errs <- err
+			}
+			fmt.Println(resp)
+
+		}
+	}
+
+	for i := 0; i < 10; i++ {
+		go getThread()
+	}
+
 	for {
 		_, urlRand := generateRandomPage(30)
 		url := fmt.Sprintf("http://%s/%s", server, urlRand)
-
-		fmt.Printf("Fetching URL %s\n", url)
-		resp, err := http.Get(url)
-		if err != nil {
-			return err
-		}
-		fmt.Println(resp)
+		urls <- url
 	}
-	return nil
+
+	err := <-errs
+	return err
 }
 
 func main() {
