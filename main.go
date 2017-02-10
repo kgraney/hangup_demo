@@ -3,44 +3,33 @@ package main
 import (
 	"crypto/md5"
 	"crypto/rand"
+	"encoding/base64"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
 	"github.com/urfave/cli"
 )
 
-func generateRandomPages(numPages int, pageSize int) map[string][]byte {
-	bytes := make(chan []byte)
-	go func() {
-		for i := 0; i < numPages; i++ {
-			buf := make([]byte, pageSize)
-			rand.Read(buf)
-			bytes <- buf
-		}
-		close(bytes)
-	}()
+func generateRandomPage(pageSize int) (string, string) {
+	log.Printf("Generating random response page of size %d bytes", pageSize)
+	buf := make([]byte, pageSize)
+	rand.Read(buf)
 
-	pages := make(map[string][]byte)
-	for buf := range bytes {
-		hash := fmt.Sprintf("%x", md5.Sum(buf))
-		pages[hash] = buf
-	}
-	return pages
+	hash := fmt.Sprintf("%x", md5.Sum(buf))
+	return hash, base64.StdEncoding.EncodeToString(buf)
 }
 
 func runServer(c *cli.Context) error {
-	pages := generateRandomPages(100, 2e3)
-
-	http.HandleFunc("/list", func(w http.ResponseWriter, r *http.Request) {
-		for k := range pages {
-			fmt.Fprintf(w, "%s\n", k)
-		}
-	})
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		k := r.URL.Path[1:]
-		fmt.Fprintf(w, "%s", pages[k])
+		hash, bstr := generateRandomPage(2e3)
+
+		fmt.Fprintf(w, "hash: %s\n\n%s", hash, bstr)
+		//k := r.URL.Path[1:]
 	})
+
+	log.Print("Starting listening server")
 	return http.ListenAndServe(":8080", nil)
 }
 
