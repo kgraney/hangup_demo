@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"time"
@@ -47,8 +48,15 @@ func sendRequests(c *cli.Context) error {
 	errs := make(chan error)
 
 	getThread := func() {
-		tlsConfig := &tls.Config{}
-		transport := &http.Transport{TLSClientConfig: tlsConfig}
+		transport := &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			Dial: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).Dial,
+			TLSHandshakeTimeout: 10 * time.Second,
+			TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
+		}
 		client := &http.Client{
 			Timeout:   20 * time.Second,
 			Transport: transport,
