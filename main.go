@@ -23,10 +23,10 @@ func generateRandomPage(pageSize int) (string, string) {
 
 func runServer(c *cli.Context) error {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Printf("Request for URL: /%s", r.URL.Path[1:])
 		hash, bstr := generateRandomPage(184643)
 
 		fmt.Fprintf(w, "hash: %s\n\n%s", hash, bstr)
-		//k := r.URL.Path[1:]
 	})
 
 	log.Print("Starting listening server")
@@ -37,10 +37,10 @@ func sendRequests(c *cli.Context) error {
 	server := c.String("server")
 	log.Printf("Connecting to target server: %s", server)
 
-	_, urlRand := generateRandomPage(30)
-	url := fmt.Sprintf("http://%s/%s", server, urlRand)
-
 	for {
+		_, urlRand := generateRandomPage(30)
+		url := fmt.Sprintf("http://%s/%s", server, urlRand)
+
 		fmt.Printf("Fetching URL %s\n", url)
 		resp, err := http.Get(url)
 		if err != nil {
