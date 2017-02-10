@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"crypto/md5"
 	"crypto/rand"
 	"crypto/tls"
@@ -59,8 +60,22 @@ func sendRequests(c *cli.Context) error {
 			if err != nil {
 				errs <- err
 			}
-			fmt.Println(resp)
 
+			reader := bufio.NewReader(resp.Body)
+			var hash string
+			for {
+				line, err := reader.ReadBytes('\n')
+				if err != nil {
+					log.Printf("%s\n", err)
+					break
+				}
+				if string(line) == "\n" {
+					continue
+				} else if string(line[0:4]) == "hash" {
+					hash = string(line[6 : len(line)-1])
+				}
+			}
+			fmt.Println(hash)
 		}
 	}
 
